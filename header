@@ -1,0 +1,62 @@
+#ifndef SPACEXPLORER_H
+#define SPACEXPLORER_H
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <string.h>
+#include <time.h>
+#include <ctype.h>
+
+#define GRID_SIZE 23
+#define MAX_NAME_LENGTH 50
+
+typedef enum {
+    EASY,
+    MEDIUM,
+    HARD
+} Difficulty;
+
+typedef struct {
+    int x;
+    int y;
+} Position;
+
+typedef struct {
+    Position position;
+    Position direction;
+    int fuel;
+    int health;
+    int collected_junk;
+    int required_junk;
+} Spaceship;
+
+typedef struct {
+    char grid[GRID_SIZE][GRID_SIZE];
+    Position *asteroids;
+    Position *asteroid_directions;
+    int asteroid_count;
+    Spaceship player;
+    Difficulty difficulty;
+    int turns_remaining;
+    bool game_over;
+    bool game_won;
+} GameState;
+
+// Game functions
+void initialize_game(GameState *game, Difficulty difficulty);
+void print_grid(const GameState *game);
+void update_game(GameState *game, char input);
+bool is_game_over(const GameState *game);
+bool is_game_won(const GameState *game);
+void print_game_status(const GameState *game);
+void free_game_resources(GameState *game);
+
+// Menu functions
+void display_main_menu();
+void display_instructions();
+void display_leaderboard();
+Difficulty display_difficulty_menu();
+void add_to_leaderboard(int score, Difficulty difficulty, const char* name);
+
+#endif // SPACEXPLORER_H
