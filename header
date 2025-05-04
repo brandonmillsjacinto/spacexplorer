@@ -1,77 +1,60 @@
 #ifndef SPACEXPLORER_H
 #define SPACEXPLORER_H
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-#include <stdbool.h>
-#include <ctype.h>
+#define GRID_SIZE 21
+#define MAX_JUNK 70
+#define MAX_ASTEROIDS 40
+#define MAX_NAME_LEN 30
+#define MAX_LEADERBOARD_ENTRIES 10
 
-#define MIN_GRID_SIZE 18
-#define MAX_GRID_SIZE 30
-#define MAX_SCORES 10
-#define MAX_FILENAME 50
+typedef enum { EASY, MEDIUM, HARD } Difficulty;
 
-// Difficulty levels
-typedef enum {
-    EASY,
-    MEDIUM,
-    HARD
-} Difficulty;
+typedef enum { UP, DOWN, LEFT, RIGHT } Direction;
 
-// Game entities
 typedef struct {
-    int x;
-    int y;
+    int x, y;
 } Position;
 
 typedef struct {
+    char name[MAX_NAME_LEN];
     Position pos;
-    int health;
     int fuel;
-    int collected_junk;
-    int required_junk;
-} Spaceship;
+    int health;
+    int junkCollected;
+} Player;
 
 typedef struct {
     Position pos;
-    Position direction;
+    Direction direction;
+    int active;
 } Asteroid;
 
 typedef struct {
     Position pos;
-    bool collected;
-} SpaceJunk;
+    int active;
+} Junk;
 
 typedef struct {
     char name[50];
-    int score;
-} HighScore;
+    int fuelLeft;
+    int health;
+    int movesTaken;
+} LeaderboardEntry;
 
-typedef struct {
-    int width;
-    int height;
-    int junk_count;
-    Difficulty difficulty;
-    Spaceship ship;
-    Asteroid asteroid;
-    SpaceJunk *junks;
-    bool game_over;
-    bool game_won;
-    int turns;
-} GameState;
+void displayGrid(Player *player, Asteroid asteroids[], Junk junk[], int junkCount, int asteroidCount);
+void movePlayer(Player *player, char direction);
+void moveAsteroids(Asteroid asteroids[], int asteroidCount);
+int checkCollision(Player *player, Asteroid asteroids[], int asteroidCount);
+void collectJunk(Player *player, Junk junk[], int *junkCount);
+void readIntroFromFile(const char *filename);
+void writeScoreToFile(const char *filename, Player *player, Difficulty diff);
+void initJunk(Junk junk[], int count);
+void showStats(Player *player);
+void chooseDifficulty(Difficulty *diff, Player *player, int *junkCount, int *asteroidCount);
+void initAsteroids(Asteroid asteroids[], int count);
+void displayMainMenu();
+void showLeaderboard();
+void startNewGame(Player *player, Asteroid asteroids[], Junk junk[], int *junkCount, int *asteroidCount);
+int compareMoves(const void *a, const void *b);
 
-// Function declarations
-void initialize_game(GameState *game, int width, int height, Difficulty diff);
-void cleanup_game(GameState *game);
-void render_game(const GameState *game);
-void process_input(GameState *game, char input);
-void update_game(GameState *game);
-bool check_collision(const GameState *game);
-void save_score(const char *filename, const char *player_name, int score);
-void load_scores(const char *filename, HighScore scores[], int *count);
-void show_help();
-void load_level_settings(const char *filename, int *easy_junk, int *medium_junk, int *hard_junk);
-
-#endif // SPACEXPLORER_H
+#endif
