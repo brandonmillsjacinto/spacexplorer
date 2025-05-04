@@ -1,485 +1,196 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#include <stdbool.h>
 #include "spacexplorer.h"
 
-void initialize_game(GameState *game, Difficulty difficulty) {
+#define GRID_SIZE 18
+#define MAX_JUNK 30
+#define MAX_HEALTH 100
+#define RESOURCE_MAX 100
+
+// Structure Definitions
+
+typedef struct {
+    int x, y;
+} Position;
+
+typedef struct {
+    Position pos;
+    int health;
+    int fuel;
+    int junkCollected;
+} Player;
+
+typedef struct {
+    Position pos;
+} Asteroid;
+
+typedef struct {
+    Position pos[MAX_JUNK];
+    int count;
+} JunkField;
+
+// Function Prototypes
+void loadIntro();
+void saveScore(Player *player);
+void initGame(Player *player, Asteroid *asteroid, JunkField *junk);
+void drawGrid(Player *player, Asteroid *asteroid, JunkField *junk);
+void movePlayer(Player *player, char move);
+void moveAsteroid(Asteroid *asteroid);
+bool isGameOver(Player *player, Asteroid *asteroid);
+void collectJunk(Player *player, JunkField *junk);
+bool isPositionEqual(Position a, Position b);
+void showStatus(Player *player);
+
+// Main Function
+int main() {
     srand(time(NULL));
-    game->difficulty = difficulty;
+    Player player;
+    Asteroid asteroid;
+    JunkField junk;
+    char command;
 
-    // Set difficulty parameters
-    switch(difficulty) {
-        case EASY:
-            game->player.required_junk = 5;
-            game->turns_remaining = 150;
-            game->player.health = 70;
-            game->asteroid_count = 75;
-            break;
-        case MEDIUM:
-            game->player.required_junk = 10;
-            game->turns_remaining = 100;
-            game->player.health = 50;
-            game->asteroid_count = 150;
-            break;
-        case HARD:
-            game->player.required_junk = 20;
-            game->turns_remaining = 75;
-            game->player.health = 30;
-            game->asteroid_count = 300;
-            break;
-    }
+    loadIntro();
+    initGame(&player, &asteroid, &junk);
 
-    // Initialize player at random position
-    game->player.position.x = rand() % GRID_SIZE;
-    game->player.position.y = rand() % GRID_SIZE;
-    game->player.fuel = 100;
-    game->player.collected_junk = 0;
-    game->game_over = false;
-    game->game_won = false;
+    while (!isGameOver(&player, &asteroid)) {
+        drawGrid(&player, &asteroid, &junk);
+        printf("\nCommand (WASD to move, I for status, Q to quit): ");
+        scanf(" %c", &command);
+        command = toupper(command);
 
-    // Player starts stationary until first move
-    game->player.direction.x = 0;
-    game->player.direction.y = 0;
-
-    // Initialize empty grid
-    memset(game->grid, '.', sizeof(game->grid));
-
-    // Place space junk (20% of cells)
-    for (int i = 0; i < GRID_SIZE; i++) {
-        for (int j = 0; j < GRID_SIZE; j++) {
-            if (rand() % 5 == 0 && !(i == game->player.position.x && j == game->player.position.y)) {
-                game->grid[i][j] = 'J';
-            }
+        if (command == 'Q') break;
+        if (command == 'I') {
+            showStatus(&player);
+            continue;
         }
+
+        movePlayer(&player, command);
+        moveAsteroid(&asteroid);
+        collectJunk(&player, &junk);
+        player.fuel--;
     }
 
-    // Allocate memory for asteroids and their directions
-    game->asteroids = malloc(game->asteroid_count * sizeof(Position));
-    game->asteroid_directions = malloc(game->asteroid_count * sizeof(Position));
-    if (!game->asteroids || !game->asteroid_directions) {
-        printf("Memory allocation failed!\n");
-        exit(1);
+    drawGrid(&player, &asteroid, &junk);
+
+    if (isPositionEqual(player.pos, asteroid.pos)) {
+        printf("\nCrashed into an asteroid! Game Over.\n");
+    } else if (player.fuel <= 0) {
+        printf("\nYou ran out of fuel! Game Over.\n");
+    } else {
+        printf("\nGame ended.\n");
     }
 
-    // Place asteroids randomly with fixed directions
-    for (int i = 0; i < game->asteroid_count; i++) {
-        do {
-            game->asteroids[i].x = rand() % GRID_SIZE;
-            game->asteroids[i].y = rand() % GRID_SIZE;
-        } while ((game->asteroids[i].x == game->player.position.x &&
-                 game->asteroids[i].y == game->player.position.y) ||
-                 game->grid[game->asteroids[i].x][game->asteroids[i].y] == 'J');
+    saveScore(&player);
+    return 0;
+}
 
-        // Set fixed direction for each asteroid (only up, down, left, right)
-        int dir = rand() % 4;
-        switch(dir) {
-            case 0: game->asteroid_directions[i].x = -1; game->asteroid_directions[i].y = 0; break;  // up
-            case 1: game->asteroid_directions[i].x = 1; game->asteroid_directions[i].y = 0; break;   // down
-            case 2: game->asteroid_directions[i].x = 0; game->asteroid_directions[i].y = -1; break;  // left
-            case 3: game->asteroid_directions[i].x = 0; game->asteroid_directions[i].y = 1; break;   // right
+// Function Implementations
+
+void loadIntro() {
+    FILE *file = fopen("intro.txt", "r");
+    if (file) {
+        char line[256];
+        while (fgets(line, sizeof(line), file)) {
+            printf("%s", line);
         }
+        fclose(file);
+    } else {
+        printf("Welcome to SpaceXplorer!\n");
+    }
+    printf("Press Enter to begin...");
+    getchar();
+    getchar();
+}
+
+void saveScore(Player *player) {
+    FILE *file = fopen("leaderboard.txt", "a");
+    if (file) {
+        fprintf(file, "Junk Collected: %d, Fuel Left: %d\n", player->junkCollected, player->fuel);
+        fclose(file);
     }
 }
 
-void print_grid(const GameState *game) {
-    printf("\n");
-    for (int i = 0; i < GRID_SIZE + 2; i++) printf("#");
-    printf("\n");
+void initGame(Player *player, Asteroid *asteroid, JunkField *junk) {
+    player->pos.x = 0;
+    player->pos.y = 0;
+    player->health = MAX_HEALTH;
+    player->fuel = RESOURCE_MAX;
+    player->junkCollected = 0;
 
-    for (int i = 0; i < GRID_SIZE; i++) {
-        printf("#");
-        for (int j = 0; j < GRID_SIZE; j++) {
-            char cell = '.';
+    asteroid->pos.x = GRID_SIZE - 1;
+    asteroid->pos.y = GRID_SIZE - 1;
 
-            // Check if player is here
-            if (i == game->player.position.x && j == game->player.position.y) {
-                cell = 'S';
-            }
-            // Check if asteroid is here
-            else {
-                for (int k = 0; k < game->asteroid_count; k++) {
-                    if (game->asteroids[k].x == i && game->asteroids[k].y == j) {
-                        cell = 'A';
+    junk->count = MAX_JUNK;
+    for (int i = 0; i < junk->count; ++i) {
+        junk->pos[i].x = rand() % GRID_SIZE;
+        junk->pos[i].y = rand() % GRID_SIZE;
+    }
+}
+
+void drawGrid(Player *player, Asteroid *asteroid, JunkField *junk) {
+    for (int y = 0; y < GRID_SIZE; ++y) {
+        for (int x = 0; x < GRID_SIZE; ++x) {
+            Position pos = {x, y};
+            if (isPositionEqual(pos, player->pos)) {
+                printf("P ");
+            } else if (isPositionEqual(pos, asteroid->pos)) {
+                printf("A ");
+            } else {
+                bool isJunk = false;
+                for (int j = 0; j < junk->count; ++j) {
+                    if (isPositionEqual(pos, junk->pos[j])) {
+                        printf("J ");
+                        isJunk = true;
                         break;
                     }
                 }
-                // If no asteroid, check for junk
-                if (cell == '.' && game->grid[i][j] == 'J') {
-                    cell = 'J';
-                }
+                if (!isJunk) printf(". ");
             }
-            printf("%c", cell);
         }
-        printf("#\n");
-    }
-
-    for (int i = 0; i < GRID_SIZE + 2; i++) printf("#");
-    printf("\n");
-}
-
-void move_asteroids(GameState *game) {
-    for (int i = 0; i < game->asteroid_count; i++) {
-        // Skip if asteroid is marked for removal
-        if (game->asteroids[i].x == -1) continue;
-
-        // Move asteroid exactly one space in its current direction
-        game->asteroids[i].x += game->asteroid_directions[i].x;
-        game->asteroids[i].y += game->asteroid_directions[i].y;
-
-        // Bounce off walls (reverse direction and move back)
-        if (game->asteroids[i].x < 0) {
-            game->asteroids[i].x = 0;
-            game->asteroid_directions[i].x *= -1;
-        }
-        else if (game->asteroids[i].x >= GRID_SIZE) {
-            game->asteroids[i].x = GRID_SIZE - 1;
-            game->asteroid_directions[i].x *= -1;
-        }
-
-        if (game->asteroids[i].y < 0) {
-            game->asteroids[i].y = 0;
-            game->asteroid_directions[i].y *= -1;
-        }
-        else if (game->asteroids[i].y >= GRID_SIZE) {
-            game->asteroids[i].y = GRID_SIZE - 1;
-            game->asteroid_directions[i].y *= -1;
-        }
+        printf("\n");
     }
 }
 
-void destroy_asteroids(GameState *game, int count) {
-    int destroyed = 0;
-    for (int i = 0; i < game->asteroid_count && destroyed < count; i++) {
-        if (game->asteroids[i].x != -1) {  // If not already destroyed
-            game->asteroids[i].x = -1;     // Mark for removal
-            destroyed++;
-        }
+void movePlayer(Player *player, char move) {
+    switch (move) {
+        case 'W': if (player->pos.y > 0) player->pos.y--; break;
+        case 'S': if (player->pos.y < GRID_SIZE - 1) player->pos.y++; break;
+        case 'A': if (player->pos.x > 0) player->pos.x--; break;
+        case 'D': if (player->pos.x < GRID_SIZE - 1) player->pos.x++; break;
+        default: break;
     }
 }
 
-void update_game(GameState *game, char input) {
-    if (game->game_over || game->game_won) return;
-
-    // Handle player input
-    switch(input) {
-        case 'w':
-            game->player.direction.x = -1;
-            game->player.direction.y = 0;
-            break;
-        case 's':
-            game->player.direction.x = 1;
-            game->player.direction.y = 0;
-            break;
-        case 'a':
-            game->player.direction.x = 0;
-            game->player.direction.y = -1;
-            break;
-        case 'd':
-            game->player.direction.x = 0;
-            game->player.direction.y = 1;
-            break;
-        case 'h':
-            print_game_status(game);
-            return;
-        default:
-            printf("Invalid input! Use WASD to move, H for status.\n");
-            return;
-    }
-
-    // Calculate new position
-    Position new_pos = game->player.position;
-    new_pos.x += game->player.direction.x;
-    new_pos.y += game->player.direction.y;
-
-    // Check boundaries
-    if (new_pos.x < 0 || new_pos.x >= GRID_SIZE ||
-        new_pos.y < 0 || new_pos.y >= GRID_SIZE) {
-        printf("Cannot move outside the grid! Try another direction.\n");
-        return;
-    }
-
-    // Update player position
-    game->player.position = new_pos;
-    
-    // Update fuel and health based on difficulty
-    switch(game->difficulty) {
-        case EASY:
-            game->player.fuel -= 1;
-            game->player.health -= 1;
-            break;
-        case MEDIUM:
-            game->player.fuel -= 2;
-            game->player.health -= 2;
-            break;
-        case HARD:
-            game->player.fuel -= 3;
-            game->player.health -= 3;
-            break;
-    }
-    
-    game->turns_remaining -= 1;
-
-    // Check for space junk collection
-    if (game->grid[game->player.position.x][game->player.position.y] == 'J') {
-        game->player.collected_junk++;
-        game->grid[game->player.position.x][game->player.position.y] = '.';
-
-        // Add health and fuel bonus when collecting junk
-        switch(game->difficulty) {
-            case EASY:
-                game->player.health += 5;
-                game->player.fuel += 5;
-                break;
-            case MEDIUM:
-                game->player.health += 3;
-                game->player.fuel += 3;
-                break;
-            case HARD:
-                game->player.health += 1;
-                game->player.fuel += 1;
-                break;
-        }
-        
-        // Ensure health and fuel don't exceed 100
-        if (game->player.health > 100) game->player.health = 100;
-        if (game->player.fuel > 100) game->player.fuel = 100;
-
-        // Destroy asteroids based on difficulty
-        int asteroids_to_destroy;
-        switch(game->difficulty) {
-            case EASY: asteroids_to_destroy = 5; break;
-            case MEDIUM: asteroids_to_destroy = 3; break;
-            case HARD: asteroids_to_destroy = 1; break;
-        }
-        destroy_asteroids(game, asteroids_to_destroy);
-    }
-
-    // Move asteroids (one space per player move)
-    move_asteroids(game);
-
-    // Check for asteroid collisions
-    for (int i = 0; i < game->asteroid_count; i++) {
-        if (game->asteroids[i].x != -1 &&  // Skip destroyed asteroids
-            game->player.position.x == game->asteroids[i].x &&
-            game->player.position.y == game->asteroids[i].y) {
-            game->player.health = 0;
-            printf("Asteroid collision! Game over!\n");
-            break;
-        }
-    }
-
-    // Check for win/lose conditions
-    if (game->player.collected_junk >= game->player.required_junk) {
-        game->game_won = true;
-    }
-
-    if (game->player.health <= 0 || game->player.fuel <= 0 || game->turns_remaining <= 0) {
-        game->game_over = true;
-    }
+void moveAsteroid(Asteroid *asteroid) {
+    if (asteroid->pos.x > 0) asteroid->pos.x--;
+    if (asteroid->pos.y > 0) asteroid->pos.y--;
 }
 
-bool is_game_over(const GameState *game) {
-    return game->game_over;
+bool isGameOver(Player *player, Asteroid *asteroid) {
+    return player->fuel <= 0 || isPositionEqual(player->pos, asteroid->pos);
 }
 
-bool is_game_won(const GameState *game) {
-    return game->game_won;
-}
-
-void print_game_status(const GameState *game) {
-    printf("\n--- Spaceship Status ---\n");
-    printf("Health: %d\n", game->player.health);
-    printf("Fuel: %d\n", game->player.fuel);
-    printf("Collected Junk: %d/%d\n", game->player.collected_junk, game->player.required_junk);
-    printf("Turns remaining: %d\n", game->turns_remaining);
-    printf("Difficulty: ");
-    switch(game->difficulty) {
-        case EASY: printf("Easy\n"); break;
-        case MEDIUM: printf("Medium\n"); break;
-        case HARD: printf("Hard\n"); break;
-    }
-    printf("------------------------\n");
-}
-
-void free_game_resources(GameState *game) {
-    free(game->asteroids);
-    free(game->asteroid_directions);
-}
-
-void display_main_menu() {
-    printf("\n=== SpaceXplorer ===\n");
-    printf("1. Instructions\n");
-    printf("2. Start Game\n");
-    printf("3. Leaderboard\n");
-    printf("4. Quit\n");
-    printf("===================\n");
-    printf("Select an option: ");
-}
-
-void display_instructions() {
-    FILE *file = fopen("data/instructions.txt", "r");
-    if (file) {
-        printf("\n=== Game Instructions ===\n");
-        char ch;
-        while ((ch = fgetc(file)) != EOF) {
-            putchar(ch);
-        }
-        fclose(file);
-    } else {
-        printf("Could not load instructions.\n");
-    }
-}
-
-void display_leaderboard() {
-    FILE *file = fopen("data/leaderboard.txt", "r");
-    if (file) {
-        printf("\n=== Leaderboard ===\n");
-        char ch;
-        while ((ch = fgetc(file)) != EOF) {
-            putchar(ch);
-        }
-        fclose(file);
-    } else {
-        printf("No leaderboard data available.\n");
-    }
-}
-
-Difficulty display_difficulty_menu() {
-    int choice;
-    while (1) {
-        printf("\n=== Select Difficulty ===\n");
-        printf("1. Easy\n");
-        printf("2. Medium\n");
-        printf("3. Hard\n");
-        printf("=======================\n");
-        printf("Select difficulty: ");
-        scanf("%d", &choice);
-
-        if (choice >= 1 && choice <= 3) {
-            break;
-        }
-        printf("Invalid choice. Please select 1, 2, or 3.\n");
-    }
-
-    switch(choice) {
-        case 1: return EASY;
-        case 2: return MEDIUM;
-        case 3: return HARD;
-        default: return EASY;
-    }
-}
-
-void add_to_leaderboard(int score, Difficulty difficulty, const char* name) {
-    FILE *file = fopen("data/leaderboard.txt", "a");
-    if (file) {
-        char diff_str[10];
-        switch(difficulty) {
-            case EASY: strcpy(diff_str, "Easy"); break;
-            case MEDIUM: strcpy(diff_str, "Medium"); break;
-            case HARD: strcpy(diff_str, "Hard"); break;
-        }
-
-        fprintf(file, "Name: %-20s | Score: %-5d | Difficulty: %s\n", name, score, diff_str);
-        fclose(file);
-    }
-}
-
-void play_game(Difficulty difficulty) {
-    GameState game;
-    initialize_game(&game, difficulty);
-
-    printf("\n=== Game Started ===\n");
-    printf("Collect %d pieces of space junk to win!\n", game.player.required_junk);
-    printf("Controls: W (up), A (left), S (down), D (right), H (status)\n");
-
-    while (!is_game_over(&game)) {
-        print_grid(&game);
-
-        printf("Enter move (WASD) or H for status: ");
-        char input;
-        scanf(" %c", &input);
-
-        update_game(&game, input);
-
-        if (is_game_won(&game)) {
-            printf("\nCongratulations! You collected enough space junk and won the game!\n");
-            int score = game.player.health + game.player.fuel + (game.turns_remaining * 2);
-            printf("Your score: %d\n", score);
-
-            printf("Enter your name for the leaderboard: ");
-            char name[MAX_NAME_LENGTH];
-            scanf("%s", name);
-            add_to_leaderboard(score, difficulty, name);
-
-            free_game_resources(&game);
+void collectJunk(Player *player, JunkField *junk) {
+    for (int i = 0; i < junk->count; ++i) {
+        if (isPositionEqual(player->pos, junk->pos[i])) {
+            player->junkCollected++;
+            player->fuel += 5;
+            junk->pos[i] = junk->pos[junk->count - 1];
+            junk->count--;
+            printf("Collected space junk!\n");
             return;
         }
     }
-
-    printf("\nGame Over! ");
-    if (game.player.health <= 0) {
-        printf("Your spaceship was destroyed!\n");
-    } else if (game.player.fuel <= 0) {
-        printf("You ran out of fuel!\n");
-    } else {
-        printf("You ran out of time!\n");
-    }
-
-    free_game_resources(&game);
 }
 
-int main() {
-    // Create data directory if it doesn't exist
-    #ifdef _WIN32
-    system("mkdir data 2> nul");
-    #else
-    system("mkdir -p data 2> /dev/null");
-    #endif
+bool isPositionEqual(Position a, Position b) {
+    return a.x == b.x && a.y == b.y;
+}
 
-    // Create default files if they don't exist
-    FILE *file = fopen("data/instructions.txt", "r");
-    if (!file) {
-        file = fopen("data/instructions.txt", "w");
-        if (file) {
-            fprintf(file, "Welcome to SpaceXplorer!\n\nGame Objective:\n- Collect space junk\n- Avoid asteroids\n- Manage your resources\n");
-            fclose(file);
-        }
-    } else {
-        fclose(file);
-    }
-
-    file = fopen("data/leaderboard.txt", "r");
-    if (!file) {
-        file = fopen("data/leaderboard.txt", "w");
-        if (file) {
-            fprintf(file, "=== Top Scores ===\n");
-            fclose(file);
-        }
-    } else {
-        fclose(file);
-    }
-
-    int choice;
-    do {
-        display_main_menu();
-        scanf("%d", &choice);
-
-        switch(choice) {
-            case 1:
-                display_instructions();
-                break;
-            case 2: {
-                Difficulty difficulty = display_difficulty_menu();
-                play_game(difficulty);
-                break;
-            }
-            case 3:
-                display_leaderboard();
-                break;
-            case 4:
-                printf("Goodbye!\n");
-                break;
-            default:
-                printf("Invalid choice. Please try again.\n");
-        }
-    } while (choice != 4);
-
-    return 0;
+void showStatus(Player *player) {
+    printf("\nShip Health: %d\nFuel: %d\nJunk Collected: %d\n",
+           player->health, player->fuel, player->junkCollected);
 }
