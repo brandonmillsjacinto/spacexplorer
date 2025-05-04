@@ -1,403 +1,373 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include <string.h>
 #include "spacexplorer.h"
 
-void initialize_game(GameState *game, int width, int height, Difficulty diff) {
-    // Validate grid size
-    if (width < MIN_GRID_SIZE) width = MIN_GRID_SIZE;
-    if (height < MIN_GRID_SIZE) height = MIN_GRID_SIZE;
-    if (width > MAX_GRID_SIZE) width = MAX_GRID_SIZE;
-    if (height > MAX_GRID_SIZE) height = MAX_GRID_SIZE;
-    
-    game->width = width;
-    game->height = height;
-    game->difficulty = diff;
-    game->game_over = false;
-    game->game_won = false;
-    game->turns = 0;
-    
-    // Initialize spaceship
-    game->ship.pos.x = width / 2;
-    game->ship.pos.y = height / 2;
-    game->ship.health = 100;
-    game->ship.fuel = 150;
-    
-    // Set required junk based on difficulty
-    int easy_junk, medium_junk, hard_junk;
-    load_level_settings("resources/levels.txt", &easy_junk, &medium_junk, &hard_junk);
-    
-    switch(diff) {
-        case EASY:
-            game->ship.required_junk = easy_junk;
-            break;
-        case MEDIUM:
-            game->ship.required_junk = medium_junk;
-            break;
-        case HARD:
-            game->ship.required_junk = hard_junk;
-            break;
-    }
-    
-    game->ship.collected_junk = 0;
-    
-    // Initialize asteroid
-    game->asteroid.pos.x = rand() % width;
-    game->asteroid.pos.y = rand() % height;
-    
-    // Ensure asteroid doesn't spawn on spaceship
-    while (game->asteroid.pos.x == game->ship.pos.x && 
-           game->asteroid.pos.y == game->ship.pos.y) {
-        game->asteroid.pos.x = rand() % width;
-        game->asteroid.pos.y = rand() % height;
-    }
-    
-    // Set random direction for asteroid
-    game->asteroid.direction.x = (rand() % 3) - 1; // -1, 0, or 1
-    game->asteroid.direction.y = (rand() % 3) - 1;
-    
-    // Ensure asteroid moves (direction can't be 0,0)
-    while (game->asteroid.direction.x == 0 && game->asteroid.direction.y == 0) {
-        game->asteroid.direction.x = (rand() % 3) - 1;
-        game->asteroid.direction.y = (rand() % 3) - 1;
-    }
-    
-    // Initialize space junks
-    int junk_count = width * height / 10; // Adjust based on grid size
-    if (junk_count < 5) junk_count = 5;
-    if (junk_count > 30) junk_count = 30;
-    
-    game->junk_count = junk_count;
-    game->junks = (SpaceJunk*)malloc(junk_count * sizeof(SpaceJunk));
-    
-    for (int i = 0; i < junk_count; i++) {
-        game->junks[i].pos.x = rand() % width;
-        game->junks[i].pos.y = rand() % height;
-        game->junks[i].collected = false;
-        
-        // Ensure junk doesn't spawn on spaceship or asteroid
-        while ((game->junks[i].pos.x == game->ship.pos.x && 
-                game->junks[i].pos.y == game->ship.pos.y) ||
-               (game->junks[i].pos.x == game->asteroid.pos.x && 
-                game->junks[i].pos.y == game->asteroid.pos.y)) {
-            game->junks[i].pos.x = rand() % width;
-            game->junks[i].pos.y = rand() % height;
-        }
-        
-        // Ensure no two junks are in the same position
-        for (int j = 0; j < i; j++) {
-            if (game->junks[i].pos.x == game->junks[j].pos.x && 
-                game->junks[i].pos.y == game->junks[j].pos.y) {
-                i--; // Retry this position
-                break;
-            }
-        }
-    }
-}
+int movesTaken = 0;
 
-void cleanup_game(GameState *game) {
-    free(game->junks);
-}
-
-void render_game(const GameState *game) {
-    system("cls||clear"); // Clear screen
-    
-    printf("=== SpaceXplorer ===\n");
-    printf("Fuel: %d | Health: %d | Junk: %d/%d | Turns: %d\n", 
-           game->ship.fuel, game->ship.health, 
-           game->ship.collected_junk, game->ship.required_junk,
-           game->turns);
-    printf("Controls: WASD to move, H for help, Q to quit\n\n");
-    
-    // Draw top border
-    printf("+");
-    for (int x = 0; x < game->width; x++) printf("-");
-    printf("+\n");
-    
-    for (int y = 0; y < game->height; y++) {
-        printf("|"); // Left border
-        
-        for (int x = 0; x < game->width; x++) {
-            char cell = ' ';
-            
-            // Check spaceship
-            if (x == game->ship.pos.x && y == game->ship.pos.y) {
-                cell = 'S';
-            }
-            // Check asteroid
-            else if (x == game->asteroid.pos.x && y == game->asteroid.pos.y) {
-                cell = 'A';
-            }
-            // Check space junks
+void displayGrid(Player *player, Asteroid asteroids[], Junk junk[], int junkCount, int asteroidCount) {
+    for (int y = 0; y < GRID_SIZE; y++) {
+        for (int x = 0; x < GRID_SIZE; x++) {
+            if (player->pos.x == x && player->pos.y == y)
+                printf("P ");
             else {
-                for (int j = 0; j < game->junk_count; j++) {
-                    if (!game->junks[j].collected && 
-                        x == game->junks[j].pos.x && y == game->junks[j].pos.y) {
-                        cell = 'J';
+                int found = 0;
+                for (int i = 0; i < asteroidCount; i++) {
+                    if (asteroids[i].active && asteroids[i].pos.x == x && asteroids[i].pos.y == y) {
+                        printf("A ");
+                        found = 1;
                         break;
                     }
                 }
+                if (!found) {
+                    for (int i = 0; i < junkCount; i++) {
+                        if (junk[i].active && junk[i].pos.x == x && junk[i].pos.y == y) {
+                            printf("J ");
+                            found = 1;
+                            break;
+                        }
+                    }
+                }
+                if (!found) printf(". ");
             }
-            
-            printf("%c", cell);
         }
-        
-        printf("|\n"); // Right border
+        printf("\n");
     }
-    
-    // Draw bottom border
-    printf("+");
-    for (int x = 0; x < game->width; x++) printf("-");
-    printf("+\n");
-    
-    if (game->game_over) {
-        printf("\nGAME OVER! ");
-        if (game->game_won) {
-            printf("You collected enough space junk to return home safely!\n");
+}
+
+void movePlayer(Player *player, char direction) {
+    int newX = player->pos.x;
+    int newY = player->pos.y;
+
+    switch (direction) {
+        case 'w': newY--; break;
+        case 's': newY++; break;
+        case 'a': newX--; break;
+        case 'd': newX++; break;
+        default:
+            printf("Invalid input. Use w/a/s/d (w - Up, a - Left, s - Down, d - Right).\n");
+            return;
+    }
+
+    if (newX < 0 || newX >= GRID_SIZE || newY < 0 || newY >= GRID_SIZE) {
+        printf("Move not possible, you are at the edge! Try again.\n");
+        return;
+    }
+
+    player->pos.x = newX;
+    player->pos.y = newY;
+    player->fuel--;
+}
+
+void moveAsteroids(Asteroid asteroids[], int asteroidCount) {
+    for (int i = 0; i < asteroidCount; i++) {
+        if (!asteroids[i].active) continue;
+
+        int newX = asteroids[i].pos.x;
+        int newY = asteroids[i].pos.y;
+
+        switch (asteroids[i].direction) {
+            case UP: newY--; break;
+            case DOWN: newY++; break;
+            case LEFT: newX--; break;
+            case RIGHT: newX++; break;
+        }
+
+        if (newX < 0 || newX >= GRID_SIZE || newY < 0 || newY >= GRID_SIZE) {
+            asteroids[i].direction = rand() % 4;
         } else {
-            printf("Your spaceship was destroyed or ran out of fuel!\n");
+            asteroids[i].pos.x = newX;
+            asteroids[i].pos.y = newY;
         }
     }
 }
 
-void process_input(GameState *game, char input) {
-    if (game->game_over) return;
-    
-    Position new_pos = game->ship.pos;
-    
-    switch(tolower(input)) {
-        case 'w': new_pos.y--; break;
-        case 'a': new_pos.x--; break;
-        case 's': new_pos.y++; break;
-        case 'd': new_pos.x++; break;
-        case 'h': show_help(); return;
-        case 'q': game->game_over = true; return;
-        default: return; // Ignore invalid input
-    }
-    
-    // Check boundaries
-    if (new_pos.x >= 0 && new_pos.x < game->width &&
-        new_pos.y >= 0 && new_pos.y < game->height) {
-        game->ship.pos = new_pos;
-        game->ship.fuel--;
-        game->turns++;
-        
-        // Move asteroid
-        game->asteroid.pos.x += game->asteroid.direction.x;
-        game->asteroid.pos.y += game->asteroid.direction.y;
-        
-        // Handle asteroid bouncing off walls
-        if (game->asteroid.pos.x < 0 || game->asteroid.pos.x >= game->width) {
-            game->asteroid.direction.x *= -1;
-            game->asteroid.pos.x += game->asteroid.direction.x * 2;
-        }
-        if (game->asteroid.pos.y < 0 || game->asteroid.pos.y >= game->height) {
-            game->asteroid.direction.y *= -1;
-            game->asteroid.pos.y += game->asteroid.direction.y * 2;
-        }
-        
-        // Check for junk collection
-        for (int i = 0; i < game->junk_count; i++) {
-            if (!game->junks[i].collected && 
-                game->ship.pos.x == game->junks[i].pos.x && 
-                game->ship.pos.y == game->junks[i].pos.y) {
-                game->junks[i].collected = true;
-                game->ship.collected_junk++;
-                
-                // Recycle junk for fuel and health
-                game->ship.fuel += 10;
-                game->ship.health += 5;
-                
-                // Don't exceed max health
-                if (game->ship.health > 100) game->ship.health = 100;
-            }
-        }
-        
-        // Check win condition
-        if (game->ship.collected_junk >= game->ship.required_junk) {
-            game->game_over = true;
-            game->game_won = true;
-        }
-        
-        // Check collisions and fuel
-        if (check_collision(game)) {
-            game->game_over = true;
-            game->game_won = false;
-        }
-        
-        if (game->ship.fuel <= 0) {
-            game->game_over = true;
-            game->game_won = false;
+int checkCollision(Player *player, Asteroid asteroids[], int asteroidCount) {
+    for (int i = 0; i < asteroidCount; i++) {
+        if (asteroids[i].active &&
+            player->pos.x == asteroids[i].pos.x &&
+            player->pos.y == asteroids[i].pos.y) {
+            return 1;
         }
     }
-}
-
-bool check_collision(const GameState *game) {
-    // Check asteroid collision
-    if (game->ship.pos.x == game->asteroid.pos.x && 
-        game->ship.pos.y == game->asteroid.pos.y) {
-        return true;
-    }
-    
-    // Check health
-    if (game->ship.health <= 0) {
-        return true;
-    }
-    
-    return false;
-}
-
-void update_game(GameState *game) {
-    // Random events could be added here
-}
-
-void save_score(const char *filename, const char *player_name, int score) {
-    HighScore scores[MAX_SCORES];
-    int count = 0;
-    
-    // Load existing scores
-    load_scores(filename, scores, &count);
-    
-    // Add new score
-    if (count < MAX_SCORES) {
-        strcpy(scores[count].name, player_name);
-        scores[count].score = score;
-        count++;
-    } else {
-        // Find the lowest score to replace
-        int min_index = 0;
-        for (int i = 1; i < count; i++) {
-            if (scores[i].score < scores[min_index].score) {
-                min_index = i;
-            }
-        }
-        
-        // Replace if new score is higher
-        if (score > scores[min_index].score) {
-            strcpy(scores[min_index].name, player_name);
-            scores[min_index].score = score;
-        } else {
-            return; // Not high enough to be on the leaderboard
-        }
-    }
-    
-    // Sort scores in descending order
-    for (int i = 0; i < count - 1; i++) {
-        for (int j = i + 1; j < count; j++) {
-            if (scores[i].score < scores[j].score) {
-                HighScore temp = scores[i];
-                scores[i] = scores[j];
-                scores[j] = temp;
-            }
-        }
-    }
-    
-    // Save to file
-    FILE *file = fopen(filename, "w");
-    if (file) {
-        for (int i = 0; i < count && i < MAX_SCORES; i++) {
-            fprintf(file, "%s %d\n", scores[i].name, scores[i].score);
-        }
-        fclose(file);
-    }
-}
-
-void load_scores(const char *filename, HighScore scores[], int *count) {
-    FILE *file = fopen(filename, "r");
-    *count = 0;
-    
-    if (file) {
-        while (*count < MAX_SCORES && 
-               fscanf(file, "%49s %d", scores[*count].name, &scores[*count].score) == 2) {
-            (*count)++;
-        }
-        fclose(file);
-    }
-}
-
-void show_help() {
-    system("cls||clear");
-    printf("=== SpaceXplorer Help ===\n");
-    printf("Objective: Collect space junk (J) to repair your ship and gather enough resources to return home.\n");
-    printf("Avoid the asteroid (A) which will destroy your ship on contact.\n");
-    printf("Manage your fuel and health carefully!\n\n");
-    printf("Controls:\n");
-    printf("W - Move up\n");
-    printf("A - Move left\n");
-    printf("S - Move down\n");
-    printf("D - Move right\n");
-    printf("H - Show this help screen\n");
-    printf("Q - Quit the game\n\n");
-    printf("Press any key to return to the game...");
-    getchar(); // Wait for key press
-}
-
-void load_level_settings(const char *filename, int *easy_junk, int *medium_junk, int *hard_junk) {
-    // Default values
-    *easy_junk = 10;
-    *medium_junk = 15;
-    *hard_junk = 20;
-    
-    FILE *file = fopen(filename, "r");
-    if (file) {
-        fscanf(file, "EASY %d", easy_junk);
-        fscanf(file, "MEDIUM %d", medium_junk);
-        fscanf(file, "HARD %d", hard_junk);
-        fclose(file);
-    }
-}
-
-int main() {
-    srand(time(NULL)); // Seed random number generator
-    
-    printf("=== Welcome to SpaceXplorer ===\n");
-    printf("You are an astronaut collecting space junk to repair your ship and return home.\n");
-    printf("Avoid the asteroid (A) and manage your fuel and health!\n\n");
-    
-    // Get game settings from user
-    int width, height;
-    printf("Enter grid width (%d-%d): ", MIN_GRID_SIZE, MAX_GRID_SIZE);
-    scanf("%d", &width);
-    printf("Enter grid height (%d-%d): ", MIN_GRID_SIZE, MAX_GRID_SIZE);
-    scanf("%d", &height);
-    
-    Difficulty diff;
-    printf("Select difficulty (0-Easy, 1-Medium, 2-Hard): ");
-    scanf("%d", (int*)&diff);
-    
-    // Initialize game
-    GameState game;
-    initialize_game(&game, width, height, diff);
-    
-    // Main game loop
-    char input;
-    while (!game.game_over) {
-        render_game(&game);
-        printf("Enter move (WASD, H for help, Q to quit): ");
-        scanf(" %c", &input); // Note the space before %c to skip whitespace
-        process_input(&game, input);
-        update_game(&game);
-    }
-    
-    // Game over screen
-    render_game(&game);
-    
-    if (game.game_won) {
-        char player_name[50];
-        printf("\nCongratulations! You won!\n");
-        printf("Enter your name for the leaderboard: ");
-        scanf("%49s", player_name);
-        save_score("resources/scores.txt", player_name, game.ship.collected_junk * 10);
-        
-        // Show leaderboard
-        HighScore scores[MAX_SCORES];
-        int count;
-        load_scores("resources/scores.txt", scores, &count);
-        
-        printf("\n=== Leaderboard ===\n");
-        for (int i = 0; i < count; i++) {
-            printf("%d. %s - %d\n", i+1, scores[i].name, scores[i].score);
-        }
-    }
-    
-    cleanup_game(&game);
-    printf("\nThanks for playing SpaceXplorer!\n");
     return 0;
+}
+
+void collectJunk(Player *player, Junk junk[], int *junkCount) {
+    for (int i = 0; i < *junkCount; i++) {
+        if (junk[i].active && junk[i].pos.x == player->pos.x && junk[i].pos.y == player->pos.y) {
+            junk[i].active = 0;
+            player->junkCollected++;
+            player->fuel += 3;
+            if (player->fuel > 100) player->fuel = 100;
+            player->health += 1;
+            if (player->health > 100) player->health = 100;
+        }
+    }
+}
+
+void readIntroFromFile(const char *filename) {
+    FILE *file = fopen(filename, "r");
+    if (!file) return;
+    char line[128];
+    while (fgets(line, sizeof(line), file)) {
+        printf("%s", line);
+    }
+    fclose(file);
+}
+
+int compareMoves(const void *a, const void *b) {
+    const LeaderboardEntry *entryA = (const LeaderboardEntry *)a;
+    const LeaderboardEntry *entryB = (const LeaderboardEntry *)b;
+    return entryA->movesTaken - entryB->movesTaken;
+}
+
+void writeScoreToFile(const char *filename, Player *player, Difficulty diff) {
+    LeaderboardEntry leaderboard[10] = {0};
+    LeaderboardEntry newEntry;
+    char line[256];
+    int count = 0;
+
+    FILE *file = fopen(filename, "r");
+    if (file) {
+        while (fgets(line, sizeof(line), file)) {
+            if (line[0] == '\n' || strstr(line, "---")) continue;
+            if (count < 10) {
+                sscanf(line, "%*d. %49[^,], %d Fuel, %d Health, %d Moves",
+                       leaderboard[count].name,
+                       &leaderboard[count].fuelLeft,
+                       &leaderboard[count].health,
+                       &leaderboard[count].movesTaken);
+                count++;
+            }
+        }
+        fclose(file);
+    }
+
+    snprintf(newEntry.name, sizeof(newEntry.name), "%s", player->name);
+    newEntry.fuelLeft = player->fuel;
+    newEntry.health = player->health;
+    newEntry.movesTaken = movesTaken;
+
+    if (count < 10) {
+        leaderboard[count++] = newEntry;
+    } else {
+        leaderboard[9] = newEntry;
+    }
+
+    qsort(leaderboard, count, sizeof(LeaderboardEntry), compareMoves);
+
+    file = fopen(filename, "w");
+    if (!file) return;
+
+    if (diff == EASY) {
+        fprintf(file, "--- Easy Difficulty ---\n");
+    } else if (diff == MEDIUM) {
+        fprintf(file, "--- Medium Difficulty ---\n");
+    } else if (diff == HARD) {
+        fprintf(file, "--- Hard Difficulty ---\n");
+    }
+
+    for (int i = 0; i < count; i++) {
+        fprintf(file, "%d. %s, %d Fuel, %d Health, %d Moves\n", i + 1,
+                leaderboard[i].name, leaderboard[i].fuelLeft,
+                leaderboard[i].health, leaderboard[i].movesTaken);
+    }
+    fclose(file);
+}
+
+void showLeaderboard() {
+    const char *files[] = {"leaderboard_easy.txt", "leaderboard_medium.txt", "leaderboard_hard.txt"};
+    const char *headers[] = {"Easy", "Medium", "Hard"};
+    char line[128];
+
+    printf("\n--- Leaderboard ---\n");
+
+    for (int i = 0; i < 3; i++) {
+        FILE *file = fopen(files[i], "r");
+        if (!file) {
+            printf("\n--- %s Difficulty ---\n(No data)\n", headers[i]);
+            continue;
+        }
+
+        printf("\n--- %s Difficulty ---\n", headers[i]);
+
+        while (fgets(line, sizeof(line), file)) {
+            if (strstr(line, "---")) continue;
+            printf("%s", line);
+        }
+
+        fclose(file);
+        printf("\n");
+    }
+}
+
+void chooseDifficulty(Difficulty *diff, Player *player, int *junkCount, int *asteroidCount) {
+    int choice;
+    printf("Select Difficulty:\n1. Easy\n2. Medium\n3. Hard\n> ");
+    scanf("%d", &choice);
+
+    switch (choice) {
+        case 1:
+            *diff = EASY;
+            player->fuel = 80;
+            player->health = 90;
+            *junkCount = 70;
+            *asteroidCount = 20;
+            break;
+        case 2:
+            *diff = MEDIUM;
+            player->fuel = 50;
+            player->health = 80;
+            *junkCount = 60;
+            *asteroidCount = 30;
+            break;
+        case 3:
+            *diff = HARD;
+            player->fuel = 30;
+            player->health = 70;
+            *junkCount = 50;
+            *asteroidCount = 40;
+            break;
+        default:
+            printf("Invalid choice. Please select 1, 2, or 3.\n");
+            chooseDifficulty(diff, player, junkCount, asteroidCount);
+            break;
+    }
+}
+
+void initJunk(Junk junk[], int count) {
+    int placed = 0;
+    while (placed < count) {
+        int x = rand() % GRID_SIZE;
+        int y = rand() % GRID_SIZE;
+        int unique = 1;
+
+        for (int i = 0; i < placed; i++) {
+            if (junk[i].pos.x == x && junk[i].pos.y == y) {
+                unique = 0;
+                break;
+            }
+        }
+
+        if (unique) {
+            junk[placed].pos.x = x;
+            junk[placed].pos.y = y;
+            junk[placed].active = 1;
+            placed++;
+        }
+    }
+}
+
+void initAsteroids(Asteroid asteroids[], int count) {
+    for (int i = 0; i < count; i++) {
+        asteroids[i].pos.x = rand() % GRID_SIZE;
+        asteroids[i].pos.y = rand() % GRID_SIZE;
+        asteroids[i].direction = rand() % 4;
+        asteroids[i].active = 1;
+    }
+}
+
+void showStats(Player *player) {
+    printf("Fuel: %d | Health: %d | Junk Collected: %d\n",
+           player->fuel, player->health, player->junkCollected);
+}
+
+void displayMainMenu() {
+    printf("\n--- Main Menu ---\n");
+    printf("1. Start New Game\n");
+    printf("2. Instructions\n");
+    printf("3. Leaderboard\n");
+    printf("4. Quit\n");
+    printf("Please select an option: ");
+}
+
+void startNewGame(Player *player, Asteroid asteroids[], Junk junk[], int *junkCount, int *asteroidCount) {
+    movesTaken = 0;
+
+    player->health = 100;
+    player->fuel = 100;
+    player->junkCollected = 0;
+
+    printf("Enter your name: ");
+    scanf("%s", player->name);
+
+    Difficulty diff;
+    chooseDifficulty(&diff, player, junkCount, asteroidCount);
+
+    initJunk(junk, *junkCount);
+    initAsteroids(asteroids, *asteroidCount);
+
+    char input;
+    while (1) {
+        displayGrid(player, asteroids, junk, *junkCount, *asteroidCount);
+        printf("Move w - Up, a - Left, s - Down, d - Right, h for stats, q to quit: ");
+        scanf(" %c", &input);
+
+        if (input == 'q') break;
+        if (input == 'h') {
+            showStats(player);
+            continue;
+        }
+
+        movesTaken++;
+        movePlayer(player, input);
+        collectJunk(player, junk, junkCount);
+        moveAsteroids(asteroids, *asteroidCount);
+
+        if (checkCollision(player, asteroids, *asteroidCount)) {
+            printf("You were hit by an asteroid! Game over.\n");
+            break;
+        }
+
+        if (player->fuel <= 0) {
+            printf("You have run out of fuel! Game over.\n");
+            break;
+        }
+
+        if (player->health >= 100) {
+            printf("Victory! You have fully restored your Spaceship's Health and can return home safely!\n");
+            break;
+        }
+    }
+const char *filename;
+    switch (diff) {
+        case EASY: filename = "leaderboard_easy.txt"; break;
+        case MEDIUM: filename = "leaderboard_medium.txt"; break;
+        case HARD: filename = "leaderboard_hard.txt"; break;
+    }
+    writeScoreToFile(filename, player, diff);
+}
+int main() {
+    srand(time(NULL));
+
+    Player player = { .pos = {GRID_SIZE / 2, GRID_SIZE / 2}, .health = 100, .junkCollected = 0 };
+    Asteroid asteroids[MAX_ASTEROIDS];
+    Junk junk[MAX_JUNK];
+    int junkCount = MAX_JUNK;
+    int asteroidCount = 3;
+    int choice;
+
+    while (1) {
+        displayMainMenu();
+        scanf("%d", &choice);
+
+        switch (choice) {
+            case 1:
+                startNewGame(&player, asteroids, junk, &junkCount, &asteroidCount);
+                break;
+            case 2:
+                readIntroFromFile("intro.txt");
+                break;
+            case 3:
+                showLeaderboard();
+                break;
+            case 4:
+                printf("Goodbye!\n");
+                return 0;
+            default:
+                printf("Invalid choice. Please select a valid option.\n");
+        }
+    }
 }
