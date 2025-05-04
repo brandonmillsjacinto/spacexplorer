@@ -1,45 +1,77 @@
-// spacexplorer.h
-
 #ifndef SPACEXPLORER_H
 #define SPACEXPLORER_H
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
 #include <stdbool.h>
+#include <ctype.h>
 
-#define GRID_SIZE 18
-#define MAX_JUNK 30
-#define MAX_HEALTH 100
-#define RESOURCE_MAX 100
+#define MIN_GRID_SIZE 18
+#define MAX_GRID_SIZE 30
+#define MAX_SCORES 10
+#define MAX_FILENAME 50
 
+// Difficulty levels
+typedef enum {
+    EASY,
+    MEDIUM,
+    HARD
+} Difficulty;
+
+// Game entities
 typedef struct {
-    int x, y;
+    int x;
+    int y;
 } Position;
 
 typedef struct {
     Position pos;
     int health;
     int fuel;
-    int junkCollected;
-} Player;
+    int collected_junk;
+    int required_junk;
+} Spaceship;
 
 typedef struct {
     Position pos;
+    Position direction;
 } Asteroid;
 
 typedef struct {
-    Position pos[MAX_JUNK];
-    int count;
-} JunkField;
+    Position pos;
+    bool collected;
+} SpaceJunk;
 
-// Function Prototypes
-void loadIntro();
-void saveScore(Player *player);
-void initGame(Player *player, Asteroid *asteroid, JunkField *junk);
-void drawGrid(Player *player, Asteroid *asteroid, JunkField *junk);
-void movePlayer(Player *player, char move);
-void moveAsteroid(Asteroid *asteroid);
-bool isGameOver(Player *player, Asteroid *asteroid);
-void collectJunk(Player *player, JunkField *junk);
-bool isPositionEqual(Position a, Position b);
-void showStatus(Player *player);
+typedef struct {
+    char name[50];
+    int score;
+} HighScore;
+
+typedef struct {
+    int width;
+    int height;
+    int junk_count;
+    Difficulty difficulty;
+    Spaceship ship;
+    Asteroid asteroid;
+    SpaceJunk *junks;
+    bool game_over;
+    bool game_won;
+    int turns;
+} GameState;
+
+// Function declarations
+void initialize_game(GameState *game, int width, int height, Difficulty diff);
+void cleanup_game(GameState *game);
+void render_game(const GameState *game);
+void process_input(GameState *game, char input);
+void update_game(GameState *game);
+bool check_collision(const GameState *game);
+void save_score(const char *filename, const char *player_name, int score);
+void load_scores(const char *filename, HighScore scores[], int *count);
+void show_help();
+void load_level_settings(const char *filename, int *easy_junk, int *medium_junk, int *hard_junk);
 
 #endif // SPACEXPLORER_H
