@@ -1,62 +1,45 @@
+// spacexplorer.h
+
 #ifndef SPACEXPLORER_H
 #define SPACEXPLORER_H
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <stdbool.h>
-#include <string.h>
-#include <time.h>
-#include <ctype.h>
 
-#define GRID_SIZE 23
-#define MAX_NAME_LENGTH 50
-
-typedef enum {
-    EASY,
-    MEDIUM,
-    HARD
-} Difficulty;
+#define GRID_SIZE 18
+#define MAX_JUNK 30
+#define MAX_HEALTH 100
+#define RESOURCE_MAX 100
 
 typedef struct {
-    int x;
-    int y;
+    int x, y;
 } Position;
 
 typedef struct {
-    Position position;
-    Position direction;
-    int fuel;
+    Position pos;
     int health;
-    int collected_junk;
-    int required_junk;
-} Spaceship;
+    int fuel;
+    int junkCollected;
+} Player;
 
 typedef struct {
-    char grid[GRID_SIZE][GRID_SIZE];
-    Position *asteroids;
-    Position *asteroid_directions;
-    int asteroid_count;
-    Spaceship player;
-    Difficulty difficulty;
-    int turns_remaining;
-    bool game_over;
-    bool game_won;
-} GameState;
+    Position pos;
+} Asteroid;
 
-// Game functions
-void initialize_game(GameState *game, Difficulty difficulty);
-void print_grid(const GameState *game);
-void update_game(GameState *game, char input);
-bool is_game_over(const GameState *game);
-bool is_game_won(const GameState *game);
-void print_game_status(const GameState *game);
-void free_game_resources(GameState *game);
+typedef struct {
+    Position pos[MAX_JUNK];
+    int count;
+} JunkField;
 
-// Menu functions
-void display_main_menu();
-void display_instructions();
-void display_leaderboard();
-Difficulty display_difficulty_menu();
-void add_to_leaderboard(int score, Difficulty difficulty, const char* name);
+// Function Prototypes
+void loadIntro();
+void saveScore(Player *player);
+void initGame(Player *player, Asteroid *asteroid, JunkField *junk);
+void drawGrid(Player *player, Asteroid *asteroid, JunkField *junk);
+void movePlayer(Player *player, char move);
+void moveAsteroid(Asteroid *asteroid);
+bool isGameOver(Player *player, Asteroid *asteroid);
+void collectJunk(Player *player, JunkField *junk);
+bool isPositionEqual(Position a, Position b);
+void showStatus(Player *player);
 
 #endif // SPACEXPLORER_H
