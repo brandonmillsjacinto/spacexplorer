@@ -1,3 +1,9 @@
+/*
+ * SpaceXplorer: A text-based space exploration game
+ * Author: [Your Name]
+ * CLion 2024.3.2, C99
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -194,3 +200,4 @@ void showStatus(Player *player) {
     printf("\nShip Health: %d\nFuel: %d\nJunk Collected: %d\n",
            player->health, player->fuel, player->junkCollected);
 }
+
