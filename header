@@ -1,60 +1,60 @@
-#ifndef SPACEXPLORER_H
+#ifndef SPACEXPLORER_H // Prevents the header from being included multiple times.
 #define SPACEXPLORER_H
 
-#define GRID_SIZE 21
-#define MAX_JUNK 70
-#define MAX_ASTEROIDS 40
-#define MAX_NAME_LEN 30
-#define MAX_LEADERBOARD_ENTRIES 10
+#define GRID_SIZE 21 // Size of the square grid game
+#define MAX_JUNK 70 // Maximum number of space junk pieces.
+#define MAX_ASTEROIDS 40 // Maximum number of asteroids.
+#define MAX_NAME_LEN 30 // Maximum length for player's name
+#define MAX_LEADERBOARD_ENTRIES 10 // Maximum number of leaderboard entries
 
-typedef enum { EASY, MEDIUM, HARD } Difficulty;
+typedef enum { EASY, MEDIUM, HARD } Difficulty; // Enum for difficulty levels
 
-typedef enum { UP, DOWN, LEFT, RIGHT } Direction;
+typedef enum { UP, DOWN, LEFT, RIGHT } Direction; // Enum for directions used by asteroids
 
-typedef struct {
+typedef struct { // Struct to store x and y coordinates
     int x, y;
 } Position;
 
-typedef struct {
-    char name[MAX_NAME_LEN];
-    Position pos;
-    int fuel;
-    int health;
-    int junkCollected;
+typedef struct { // Struct for the player's information
+    char name[MAX_NAME_LEN]; // Player's name
+    Position pos; // Player's current position on grid
+    int fuel; // Fuel remaining
+    int health; // Amount of Health
+    int junkCollected; // Number of junk collected.
 } Player;
 
-typedef struct {
-    Position pos;
-    Direction direction;
-    int active;
+typedef struct { // Struct for asteroid data
+    Position pos; // Current position of asteroid
+    Direction direction; // Direction the asteroid moves.
+    int active; // Whether the asteroid is currently active
 } Asteroid;
 
-typedef struct {
-    Position pos;
-    int active;
+typedef struct { // struct for space junk
+    Position pos; // Position of the junk
+    int active; // Whether the junk is still on the grid
 } Junk;
 
-typedef struct {
-    char name[50];
-    int fuelLeft;
-    int health;
-    int movesTaken;
+typedef struct { // Struct for leaderboard
+    char name[MAX_NAME_LEN]; // Name of the player
+    int fuelLeft; // Fuel left when game ended
+    int health; // Health left when game ended
+    int movesTaken; // Number of moves taken in a game.
 } LeaderboardEntry;
+// Function declarations
+void displayGrid(Player *player, Asteroid asteroids[], Junk junk[], int junkCount, int asteroidCount); // Display grid
+void movePlayer(Player *player, char direction); // Moves the player based on input
+void moveAsteroids(Asteroid asteroids[], int asteroidCount); // Moves all asteroids
+int checkCollision(Player *player, Asteroid asteroids[], int asteroidCount); // Checks if player hits an asteroid.
+void collectJunk(Player *player, Junk junk[], int *junkCount); // Handles player collecting junk
+void readIntroFromFile(const char *filename); // Read and display game intro from file.
+void writeScoreToFile(const char *filename, Player *player, Difficulty diff); // Save player score to leaderboard.
+void initJunk(Junk junk[], int count); // Initialises junk on the grid
+void showStats(Player *player); // Displays player's statistics
+void chooseDifficulty(Difficulty *diff, Player *player, int *junkCount, int *asteroidCount); // Sets game difficulty
+void initAsteroids(Asteroid asteroids[], int count); // Initialises asteroids
+void displayMainMenu(); // Displays Main menu options
+void showLeaderboard(); // Shows leaderboard from files.
+void startNewGame(Player *player, Asteroid asteroids[], Junk junk[], int *junkCount, int *asteroidCount); // Begins a new game
+int compareMoves(const void *a, const void *b); // Compare function for sorting leaderboard entries by moves
 
-void displayGrid(Player *player, Asteroid asteroids[], Junk junk[], int junkCount, int asteroidCount);
-void movePlayer(Player *player, char direction);
-void moveAsteroids(Asteroid asteroids[], int asteroidCount);
-int checkCollision(Player *player, Asteroid asteroids[], int asteroidCount);
-void collectJunk(Player *player, Junk junk[], int *junkCount);
-void readIntroFromFile(const char *filename);
-void writeScoreToFile(const char *filename, Player *player, Difficulty diff);
-void initJunk(Junk junk[], int count);
-void showStats(Player *player);
-void chooseDifficulty(Difficulty *diff, Player *player, int *junkCount, int *asteroidCount);
-void initAsteroids(Asteroid asteroids[], int count);
-void displayMainMenu();
-void showLeaderboard();
-void startNewGame(Player *player, Asteroid asteroids[], Junk junk[], int *junkCount, int *asteroidCount);
-int compareMoves(const void *a, const void *b);
-
-#endif
+#endif 
