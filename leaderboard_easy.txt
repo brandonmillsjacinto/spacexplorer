@@ -1,0 +1,4 @@
+--- Easy Difficulty ---
+1. Megan, 93 Fuel, 100 Health, 17 Moves
+2. Harry, 89 Fuel, 100 Health, 21 Moves
+3. Chris, 47 Fuel, 95 Health, 49 Moves
