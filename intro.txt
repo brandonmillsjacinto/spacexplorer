@@ -1,0 +1,26 @@
+Welcome to the SpaceXplorer Game!
+
+WHAT'S HAPPENED:
+You are taking on a role as an astronaut operating a spaceship, exploring virtual deep space when suddenly you are running out of fuel...
+
+THE MISSION:
+To clean up space junk to help fuel your spaceship so you can return home.
+
+GAME CONTROL/MOVEMENT:
+- Move: W (Up), A (Left), S (Down), D (Right)
+- Quit: Q
+- Stats: H (Health, Fuel, Junk Collected)
+- Boundaries: 21x21 Grid
+
+Caution: Every move you make... your fuel runs out... once you have ran out of fuel... you are lost... FOREVER!
+
+DIFFICULTY:
+- Easy: (Fuel: 80), (Health: 90), (Junk Spawns: 70), (Asteroids: 20)
+- Medium: (Fuel: 50), (Health: 80), (Junk Spawns: 60), (Asteroids: 30)
+- Hard: (Fuel: 30), (Health: 70), (Junk Spawns: 50), (Asteroids: 40)
+
+PLAYER IMPACT:
+- Fuel: Decreases by 1 per move.
+- Health: This never decreases but if you hit an asteroid then you lose!
+- Asteroids: Move at every turn (random directions)
+- Space Junk: Collect to restore fuel (+3) and health (+1)
