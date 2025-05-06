@@ -45,10 +45,10 @@ void movePlayer(Player *player, char direction) { // Function to move player bas
 
     // Lines 47-54 updates the position based on the direction the user enters:
     switch (direction) {
-        case 'w': newY--; break; // Up
-        case 's': newY++; break; // Down
-        case 'a': newX--; break; // Left
-        case 'd': newX++; break; // Right
+        case 'w': newY--; break; // When user presses 'w' then the co-ordinate "y" decreases and player moves UP
+        case 's': newY++; break; // When user presses 's' then the co-ordinate "y" increases and player moves DOWN
+        case 'a': newX--; break; // When user presses 'a' then the co-ordinate "x" decreases and player moves LEFT
+        case 'd': newX++; break; // When user presses 'd' then the co-ordinate "x" increases and player moves RIGHT
         default:
             printf("Invalid input. Use w/a/s/d (w - Up, a - Left, s - Down, d - Right).\n"); // This is used if user enters another character (i.e. other than w/a/s/d).
             return;
@@ -76,15 +76,15 @@ void moveAsteroids(Asteroid asteroids[], int asteroidCount) { // Function to mov
 
         // Lines 78-82 updates the position based on the direction:
         switch (asteroids[i].direction) {
-            case UP: newY--; break; // Up
-            case DOWN: newY++; break; // Down
-            case LEFT: newX--; break; // Left
-            case RIGHT: newX++; break; // Right
+            case UP: newY--; break; // Co-ordinate "y" decreases which makes the position go UP
+            case DOWN: newY++; break; // // Co-ordinate "y" increases which makes the position go DOWN
+            case LEFT: newX--; break; // // Co-ordinate "x" decreases which makes the position go LEFT
+            case RIGHT: newX++; break; // // Co-ordinate "y" increases which makes the position go RIGHT
         }
 
         if (newX < 0 || newX >= GRID_SIZE || newY < 0 || newY >= GRID_SIZE) { // If any of the asteroids are going to move outside of the grid...
             asteroids[i].direction = rand() % 4; // ... The asteroids would then go a random new direction.
-        } else { // Else...
+        } else {
 
             // ... Lines 90-91 updates the new position
             asteroids[i].pos.x = newX;
@@ -121,7 +121,7 @@ void collectJunk(Player *player, Junk junk[], int *junkCount) { // Function to c
 void readIntroFromFile(const char *filename) { // Function to read and display game instructions from text file (intro.txt).
     FILE *file = fopen(filename, "r"); // This line opens the file for reading.
     if (!file) return; // This line returns if file cannot be opened.
-    char line[129]; // This code gis used as number of characters (+1) to read the lines from the file.
+    char line[129]; // This code is used as number of characters (+1) to read the lines from the file.
     // Lines 126 and 127 reads and prints each line of the intro.txt.
     while (fgets(line, sizeof(line), file)) {
         printf("%s", line);
@@ -129,7 +129,7 @@ void readIntroFromFile(const char *filename) { // Function to read and display g
     fclose(file); // This line closes the file.
 }
 
-// Lines 133-135 is a comparison function which sorts the Leaderboard entries (being compared in qsort (line...).
+// Lines 133-135 is a comparison function which sorts the Leaderboard entries (being compared in qsort (line 174).
 int compareMoves(const void *a, const void *b) {
     const LeaderboardEntry *entryA = (const LeaderboardEntry *)a; // This line converts the first input (a) to a LeaderboardEntry pointer to access the values.
     const LeaderboardEntry *entryB = (const LeaderboardEntry *)b; // This line does the same for the second input (b) to compare with the first one.
@@ -139,7 +139,7 @@ int compareMoves(const void *a, const void *b) {
 void writeScoreToFile(const char *filename, Player *player, Difficulty diff) { // Function to write players scores to respective leaderboard text file (easy, medium and hard).
     LeaderboardEntry leaderboard[10] = {0}; // Array used to hold top 10 scores.
     LeaderboardEntry newEntry; // Entry for current player (if the player is in the top 10).
-    char line[256]; // This line is used to read lines from the file (255 characters (+1).
+    char line[256]; // This line is used to read lines from the file (255 characters (+1)).
     int count = 0; // This line is a variable to keep track of how many entries have been read from the file.
 
     FILE *file = fopen(filename, "r"); // This line opens the leaderboard textfile for reading.
@@ -262,8 +262,8 @@ void initJunk(Junk junk[], int count) { // Function to initialise junk at random
     int placed = 0; // Counter used for how many junk items have been placed.
     while (placed < count) { // This line keeps printing the junk items until the amount has been reached (depending on difficulty).
         // Lines 265 and 267 generates random position.
-        int x = rand() % GRID_SIZE; // Random x-coordinate between 0 and GRID_SIZE -1
-        int y = rand() % GRID_SIZE; // Random y-coordinate between 0 and GRID_SIZE -1
+        int x = rand() % GRID_SIZE; // Random x-coordinate between 0 and 20 (GRIZ_SIZE = 21).
+        int y = rand() % GRID_SIZE; // Random y-coordinate between 0 and 20 (GRIZ_SIZE = 21).
         int unique = 1; // This line flags to track if this position is unused.
 
         // Lines 270-273 checks if the position is already taken.
@@ -285,10 +285,10 @@ void initJunk(Junk junk[], int count) { // Function to initialise junk at random
 
 void initAsteroids(Asteroid asteroids[], int count) { // Function to initialise asteroids at random positions.
     for (int i = 0; i < count; i++) { // For loop to initialise each asteroid.
-        asteroids[i].pos.x = rand() % GRID_SIZE; // Random x-coordinate.
-        asteroids[i].pos.y = rand() % GRID_SIZE; // Random y-coordinate.
+        asteroids[i].pos.x = rand() % GRID_SIZE; // Random x-coordinate within the 21x21 grid.
+        asteroids[i].pos.y = rand() % GRID_SIZE; // Random y-coordinate within the 21x21 grid.
         asteroids[i].direction = rand() % 4; // Random direction (0-3 for UP/DOWN/LEFT/RIGHT).
-        asteroids[i].active = 1; // Mark asteroidnas active.
+        asteroids[i].active = 1; // Mark asteroids as active.
     }
 }
 
@@ -353,7 +353,7 @@ void startNewGame(Player *player, Asteroid asteroids[], Junk junk[], int *junkCo
         }
 
         if (player->health >= 100) { // If the player's health reaches 100...
-            printf("Victory! You have fully restored your Spaceship's Health and can return home safely!\n"); // ... This is printed.
+            printf("Victory! You have fully restored your Spaceship's Health, and you can continue exploring space!\n"); // ... This is printed.
             break; // Exit.
         }
     }
@@ -389,7 +389,7 @@ int main() {
                 break; // Exits and goes into new game.
             case 2: // Show instructions
                 readIntroFromFile("intro.txt"); // Displays the game instructions from a file
-                break; // Exits and displays instructions 
+                break; // Exits and displays instructions
             case 3: // Show Leaderboard
                 showLeaderboard(); // Display Leaderboard for all difficulties.
                 break; // Exits and shows leaderboard.
