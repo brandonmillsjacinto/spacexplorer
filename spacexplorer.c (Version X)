@@ -11,8 +11,8 @@ void displayGrid(Player *player, Asteroid asteroids[], Junk junk[], int junkCoun
         for (int x = 0; x < GRID_SIZE; x++) { // For loop to go through each column of the grid.
             if (player->pos.x == x && player->pos.y == y) // For loop to check where the player's position currently is...
                 printf("P "); // ... when this is found "P" is printed for the player's position.
-            else { // Else...
-                int found = 0; // ... This is used to check if something is at this position.
+            else {
+                int found = 0; // This is used to check if something is at this position.
                 // Lines 17-22 checks for asteroids in this position.
                 for (int i = 0; i < asteroidCount; i++) { // For loop through all asteroids.
                     if (asteroids[i].active && asteroids[i].pos.x == x && asteroids[i].pos.y == y) { // This line checks if the asteroid is active and its "x" and "y" coordinate matched the current grid position.
@@ -133,7 +133,7 @@ void readIntroFromFile(const char *filename) { // Function to read and display g
 int compareMoves(const void *a, const void *b) {
     const LeaderboardEntry *entryA = (const LeaderboardEntry *)a; // This line converts the first input (a) to a LeaderboardEntry pointer to access the values.
     const LeaderboardEntry *entryB = (const LeaderboardEntry *)b; // This line does the same for the second input (b) to compare with the first one.
-    return entryA->movesTaken - entryB->movesTaken; // This line compares the entries by moves taken.
+    return entryA->movesTaken - entryB->movesTaken; // This line compares the entries by moves taken and then uses the qsort to sort the leaderboard.
 }
 
 void writeScoreToFile(const char *filename, Player *player, Difficulty diff) { // Function to write players scores to respective leaderboard text file (easy, medium and hard).
@@ -146,7 +146,7 @@ void writeScoreToFile(const char *filename, Player *player, Difficulty diff) { /
     if (file) { // This line checks if the file was successfully opened.
         while (fgets(line, sizeof(line), file)) { // This line reads each line from the file.
             if (line[0] == '\n' || strstr(line, "---")) continue; // This line skips any lines that contains "---" as it is used as section headers.
-            if (count < 10) { // This line only stores up to 10 entries in the leaderboard.
+            if (count < 10) { // If leaderboard count is less than 10
                 // Lines 151-156 reads the data from the line below into the leaderboard entry
                 sscanf(line, "%*d. %49[^,], %d Fuel, %d Health, %d Moves", // %*d skips the ranking number, %49[^,] reads up to 49 characters until a comma (which is player's name), %d Fuel reads the fuel amount, %d Health reads the health value and %d Moves reads the number of moves.
                        leaderboard[count].name, // This line saves the player's name.
@@ -287,7 +287,7 @@ void initAsteroids(Asteroid asteroids[], int count) { // Function to initialise 
     for (int i = 0; i < count; i++) { // For loop to initialise each asteroid.
         asteroids[i].pos.x = rand() % GRID_SIZE; // Random x-coordinate within the 21x21 grid.
         asteroids[i].pos.y = rand() % GRID_SIZE; // Random y-coordinate within the 21x21 grid.
-        asteroids[i].direction = rand() % 4; // Random direction (0-3 for UP/DOWN/LEFT/RIGHT).
+        asteroids[i].direction = rand() % 4; // Asteroid goes in Random direction UP/DOWN/LEFT/RIGHT).
         asteroids[i].active = 1; // Mark asteroids as active.
     }
 }
