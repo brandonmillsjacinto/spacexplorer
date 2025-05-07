@@ -108,3 +108,37 @@ void collectJunk(Player *player, Junk junk[], int *junkCount) {
         }
     }
 }
+void readIntroFromFile(const char *filename) {
+    FILE *file = fopen(filename, "r"); 
+if (!file) return; .
+char line[?]; 
+    while (fgets(line, sizeof(line), file)) {
+  printf("%s", line);
+    }
+    fclose(file);
+Void writeScoreToFile(const char *filename, Player *player, Difficulty diff) { 
+    LeaderboardEntry leaderboard[10] = {0}; 
+    LeaderboardEntry newEntry; 
+    char line[256]; .
+    int count = 0; 
+    FILE *file = fopen(filename, "r"); 
+    if (file) { 
+   while (fgets(line, sizeof(line), file)) {
+      if (line[0] == '\n' || strstr(line, "---")) continue; .
+      if (count < 10) { 
+                sscanf(line, "%*d. %49[^,], %d Fuel, %d Health, %d Moves", moves.
+                       leaderboard[count].name,
+&leaderboard[count].fuelLeft, 
+         &leaderboard[count].health, 
+        &leaderboard[count].movesTaken); 
+count++; 
+  }
+     }
+   fclose(file); 
+    }
+void initJunk(Junk junk[], int count) { 
+    int placed = 0;    
+void initAsteroids(Asteroid asteroids[], int count) {  
+for (int i = 0; i < count; i++) {  
+    }
+}
