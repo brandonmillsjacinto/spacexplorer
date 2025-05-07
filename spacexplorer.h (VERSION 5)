@@ -1,0 +1,43 @@
+#ifndef SPACEXPLORER_H 
+#define SPACEXPLORER_H
+
+#define GRID_SIZE 21 
+#define MAX_JUNK 70 
+#define MAX_ASTEROIDS 40 
+#define MAX_NAME_LEN 30
+#define MAX_LEADERBOARD_ENTRIES 10 
+
+typedef enum { EASY, MEDIUM, HARD } Difficulty; 
+
+typedef enum { UP, DOWN, LEFT, RIGHT } Direction; 
+
+typedef struct { // Struct to store x and y coordinates
+    int x, y;
+} Position;
+
+typedef struct { // Struct for asteroid data
+    Position pos; // Current position of asteroid
+    Direction direction; // Direction the asteroid moves.
+    int active; // Whether the asteroid is currently active
+} Asteroid;
+
+typedef struct { // struct for space junk
+    Position pos; // Position of the junk
+    int active; // Whether the junk is still on the grid
+} Junk;
+
+void displayGrid(Player *player, Asteroid asteroids[], Junk junk[], int junkCount, int asteroidCount);
+void movePlayer(Player *player, char direction); 
+void moveAsteroids(Asteroid asteroids[], int asteroidCount); 
+int checkCollision(Player *player, Asteroid asteroids[], int asteroidCount); 
+void collectJunk(Player *player, Junk junk[], int *junkCount); 
+void readIntroFromFile(const char *filename); 
+void writeScoreToFile(const char *filename, Player *player, Difficulty diff); 
+void initJunk(Junk junk[], int count); // Initialises junk on the grid
+void initAsteroids(Asteroid asteroids[], int count);
+void showStats(Player *player); 
+void showLeaderboard();
+
+
+
+#endif 
