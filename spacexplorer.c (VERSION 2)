@@ -1,5 +1,5 @@
-#include <stdio.h> // This is used for standard input/output library functions such as "printf" and "scanf".
-#include "spacexplorer.h" // This is used as it is the Custom Header File to this game.
+#include <stdio.h> 
+#include "spacexplorer.h"
 
 void displayGrid(Player *player, Asteroid asteroids[], Junk junk[], int junkCount, int asteroidCount) {
     for (int y = 0; y < GRID_SIZE; y++) {
