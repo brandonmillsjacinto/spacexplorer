@@ -5,21 +5,21 @@
 #define MAX_JUNK 70
 #define MAX_ASTEROIDS 40
 
-typedef enum { UP, DOWN, LEFT, RIGHT } Direction; // Enum for directions used by asteroids
+typedef enum { UP, DOWN, LEFT, RIGHT } Direction; 
 
-typedef struct { // Struct to store x and y coordinates
+typedef struct { 
     int x, y;
 } Position;
 
-typedef struct { // Struct for asteroid data
-    Position pos; // Current position of asteroid
-    Direction direction; // Direction the asteroid moves.
-    int active; // Whether the asteroid is currently active
+typedef struct { 
+    Position pos; 
+    Direction direction; 
+    int active; 
 } Asteroid;
 
-typedef struct { // struct for space junk
-    Position pos; // Position of the junk
-    int active; // Whether the junk is still on the grid
+typedef struct { 
+    Position pos; 
+    int active; 
 } Junk;
 
 void displayGrid(Player *player, Asteroid asteroids[], Junk junk[], int junkCount, int asteroidCount);
