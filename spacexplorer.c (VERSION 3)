@@ -1,0 +1,51 @@
+void moveAsteroids(Asteroid asteroids[], int asteroidCount) { // Function to move asteroids in their current direction.
+    for (int i = 0; i < asteroidCount; i++) { // For loop to go through all the asteroids.
+        if (!asteroids[i].active) continue; // This line skips past any inactive asteroids (i.e. if they are not asteroids).
+
+        // Lines 74 and 75 stores the asteroids in the current position.
+        int newX = asteroids[i].pos.x;
+        int newY = asteroids[i].pos.y;
+
+        // Lines 78-82 updates the position based on the direction:
+        switch (asteroids[i].direction) {
+            case UP: newY--; break; // Co-ordinate "y" decreases which makes the position go UP
+            case DOWN: newY++; break; // // Co-ordinate "y" increases which makes the position go DOWN
+            case LEFT: newX--; break; // // Co-ordinate "x" decreases which makes the position go LEFT
+            case RIGHT: newX++; break; // // Co-ordinate "y" increases which makes the position go RIGHT
+        }
+
+        if (newX < 0 || newX >= GRID_SIZE || newY < 0 || newY >= GRID_SIZE) { // If any of the asteroids are going to move outside of the grid...
+            asteroids[i].direction = rand() % 4; // ... The asteroids would then go a random new direction.
+        } else {
+
+            // ... Lines 90-91 updates the new position
+            asteroids[i].pos.x = newX;
+            asteroids[i].pos.y = newY;
+        }
+    }
+}
+
+int checkCollision(Player *player, Asteroid asteroids[], int asteroidCount) { // Function used to check if the player collides with any of the asteroids.
+    for (int i = 0; i < asteroidCount; i++) { // For loop to go through each of the asteroids.
+        // Lines 99-101 checks if the asteroid is active and in the same position as the player
+        if (asteroids[i].active &&
+            player->pos.x == asteroids[i].pos.x &&
+            player->pos.y == asteroids[i].pos.y) {
+            return 1; // If it is then collision has occurred.
+        }
+    }
+    return 0; // If not then collision has not occurred.
+}
+
+void collectJunk(Player *player, Junk junk[], int *junkCount) { // Function to collect junk at player's position
+    for (int i = 0; i < *junkCount; i++) { // For loop to go through all the junk items.
+        if (junk[i].active && junk[i].pos.x == player->pos.x && junk[i].pos.y == player->pos.y) { // This line checks to see if the junk is active and is at the same position as the player.
+            junk[i].active = 0; // If it is... deactivate the junk.
+            player->junkCollected++; // Increment collected junk.
+            player->fuel += 3; // Increment fuel by 3.
+            if (player->fuel > 100) player->fuel = 100; // Fuel is capped at 100.
+            player->health += 1; // Increment health by 1.
+            if (player->health > 100) player->health = 100; // Health is capped at 100.
+        }
+    }
+}
