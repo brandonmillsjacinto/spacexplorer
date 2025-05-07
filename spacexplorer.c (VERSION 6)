@@ -1,3 +1,9 @@
+/* Filename: spacexplorer.h (VERSION 6).c
+Description: Main C for spacexplorer
+Author: Brandon Mills Jacinto
+Version: 6
+*/
+
 #include <stdio.h> 
 #include <stdlib.h> 
 #include <time.h> 
