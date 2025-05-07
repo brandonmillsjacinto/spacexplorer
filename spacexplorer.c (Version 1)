@@ -1,0 +1,59 @@
+#include <stdio.h>
+
+void displayGrid(Player *player, Asteroid asteroids[], Junk junk[], int junkCount, int asteroidCount) {
+    for (int y = 0; y < GRID_SIZE; y++) {
+        for (int x = 0; x < GRID_SIZE; x++) { 
+            if (player->pos.x == x && player->pos.y == y) 
+                printf("P ");
+            else {
+               int found = 0;
+                                for (int i = 0; i < asteroidCount; i++) { .
+             if (asteroids[i].active && asteroids[i].pos.x == x && asteroids[i].pos.y == y) { 
+                   printf("A "); 
+                  found = 1; 
+                  break; 
+                }
+                }
+                     if (!found) { 
+               for (int i = 0; i < junkCount; i++) { 
+                if (junk[i].active && junk[i].pos.x == x && junk[i].pos.y == y) { 
+                   printf("J "); 
+                 found = 1; 
+                     break; 
+               }
+              }
+           }
+        if (!found) printf(". "); 
+            }
+        }
+        printf("\n"); 
+    }
+}
+void movePlayer(Player *player, char direction) { 
+    int newX = player->pos.x;
+                  int newY = player->pos.y;
+switch (direction) {
+    case 'w': 
+      newY--; 
+       break; 
+     case 's': 
+     newY++; 
+       break; 
+          case 'a': 
+         newX--; 
+        break; 
+       case 'd': 
+         newX++; 
+      break; 
+     default:
+            printf("Invalid input. Use w/a/s/d (w - Up, a - Left, s - Down, d - Right).\n"); /
+            return;
+    }
+    if (newX < 0 || newX >= GRID_SIZE || newY < 0 || newY >= GRID_SIZE) {
+        printf("Move not possible, you are at the edge! Try again.\n"); 
+        return;
+    }
+  player->pos.x = newX;
+player->pos.y = newY;
+player->fuel--;
+}
