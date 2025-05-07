@@ -11,20 +11,27 @@ typedef enum { EASY, MEDIUM, HARD } Difficulty;
 
 typedef enum { UP, DOWN, LEFT, RIGHT } Direction; 
 
-typedef struct { // Struct to store x and y coordinates
+typedef struct { 
     int x, y;
 } Position;
 
-typedef struct { // Struct for asteroid data
-    Position pos; // Current position of asteroid
-    Direction direction; // Direction the asteroid moves.
-    int active; // Whether the asteroid is currently active
+typedef struct { 
+    Position pos; 
+    Direction direction; 
+    int active; 
 } Asteroid;
 
-typedef struct { // struct for space junk
-    Position pos; // Position of the junk
-    int active; // Whether the junk is still on the grid
+typedef struct { 
+    Position pos; 
+    int active; 
 } Junk;
+
+ypedef struct { 
+    char name[MAX_NAME_LEN]; 
+    int fuelLeft; 
+    int health; 
+    int movesTaken; 
+} LeaderboardEntry;
 
 void displayGrid(Player *player, Asteroid asteroids[], Junk junk[], int junkCount, int asteroidCount);
 void movePlayer(Player *player, char direction); 
@@ -33,7 +40,7 @@ int checkCollision(Player *player, Asteroid asteroids[], int asteroidCount);
 void collectJunk(Player *player, Junk junk[], int *junkCount); 
 void readIntroFromFile(const char *filename); 
 void writeScoreToFile(const char *filename, Player *player, Difficulty diff); 
-void initJunk(Junk junk[], int count); // Initialises junk on the grid
+void initJunk(Junk junk[], int count); 
 void initAsteroids(Asteroid asteroids[], int count);
 void showStats(Player *player); 
 void showLeaderboard();
