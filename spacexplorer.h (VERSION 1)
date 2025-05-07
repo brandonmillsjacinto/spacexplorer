@@ -1,0 +1,9 @@
+#ifndef SPACEXPLORER_H 
+#define SPACEXPLORER_H
+
+#define GRID 18
+#define JUNK 15
+#define ASTEROIDS 30
+#define NAME 30 
+
+#endif 
