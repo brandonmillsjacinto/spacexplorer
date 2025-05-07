@@ -1,3 +1,9 @@
+/* Filename: spacexplorer.h (VERSION 5).h
+Description: Headerfile for spacexplorer
+Author: Brandon Mills Jacinto
+Version: 5
+*/
+
 #ifndef SPACEXPLORER_H 
 #define SPACEXPLORER_H
 
