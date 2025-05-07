@@ -1,3 +1,9 @@
+/* Filename: spacexplorer.h (VERSION 1).c
+Description: Main C for spacexplorer
+Author: Brandon Mills Jacinto
+Version: 1
+*/
+
 #include <stdio.h>
 
 void displayGrid(Player *player, Asteroid asteroids[], Junk junk[], int junkCount, int asteroidCount) {
