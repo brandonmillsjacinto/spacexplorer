@@ -1,0 +1,31 @@
+#ifndef SPACEXPLORER_H 
+#define SPACEXPLORER_H
+
+#define GRID_SIZE 21
+#define MAX_JUNK 70
+#define MAX_ASTEROIDS 40
+
+typedef enum { UP, DOWN, LEFT, RIGHT } Direction; // Enum for directions used by asteroids
+
+typedef struct { // Struct to store x and y coordinates
+    int x, y;
+} Position;
+
+typedef struct { // Struct for asteroid data
+    Position pos; // Current position of asteroid
+    Direction direction; // Direction the asteroid moves.
+    int active; // Whether the asteroid is currently active
+} Asteroid;
+
+typedef struct { // struct for space junk
+    Position pos; // Position of the junk
+    int active; // Whether the junk is still on the grid
+} Junk;
+
+void displayGrid(Player *player, Asteroid asteroids[], Junk junk[], int junkCount, int asteroidCount);
+void movePlayer(Player *player, char direction); 
+void moveAsteroids(Asteroid asteroids[], int asteroidCount); 
+int checkCollision(Player *player, Asteroid asteroids[], int asteroidCount); 
+void collectJunk(Player *player, Junk junk[], int *junkCount); 
+
+#endif 
